@@ -2,42 +2,51 @@ import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 import { randomBytes } from "crypto";
 
 const snsClient = new SNSClient({ region: process.env.AWS_REGION });
+const IMEIs = [
+  "IMEI12345678901",
+  "IMEI12345678902",
+  "IMEI12345678903",
+  "IMEI12345678904",
+  "IMEI12345678905",
+  "IMEI12345678906",
+  "IMEI12345678907",
+  "IMEI12345678908",
+  "IMEI12345678909",
+  "IMEI12345678910",
+];
+const messageTypes = ["REG", "ACK", "ERR"];
 
 export const handler = async (event: any) => {
-  // Generate a random number of logs between 1 and 10
   const numberOfLogs = Math.floor(Math.random() * 10) + 1;
+  const isProducerSuccessful = Math.random() < 0.9;
 
-  // Simulate execution outcome with a 90% chance of success
-  const isSuccess = Math.random() < 0.9;
-
-  if (!isSuccess) {
-    console.error("Exception will be thrown");
+  if (!isProducerSuccessful) {
+    console.error("Producer failed execution.");
     throw new Error("Failed execution");
   }
 
   for (let i = 0; i < numberOfLogs; i++) {
-    // Create a unique message ID
     const messageId = `msg-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
-
-    // Get the current datetime in ISO format
     const datetime = new Date().toISOString();
-
-    // Generate random base64 data of at least 50 bytes
-    const dataBuffer = randomBytes(50); // Generates 50 bytes
+    const dataBuffer = randomBytes(50);
     const data = dataBuffer.toString("base64");
+    const imei = IMEIs[Math.floor(Math.random() * IMEIs.length)];
+    const type = messageTypes[Math.floor(Math.random() * messageTypes.length)];
 
-    // Construct the message object
     const message = {
       datetime,
       messageId,
+      imei,
+      type, // Message type: REG, ACK, or ERR
       data,
     };
 
-    console.info(`Publishing message ${messageId}`);
+    console.info(
+      `Publishing message ${messageId} with IMEI: ${imei} and type: ${type}`,
+    );
 
-    // Publish the message to the SNS topic
     const params = {
-      TopicArn: process.env.TOPIC_ARN, // Ensure this environment variable is set
+      TopicArn: process.env.TOPIC_ARN,
       Message: JSON.stringify(message),
     };
 

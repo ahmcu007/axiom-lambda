@@ -68,36 +68,41 @@ export class DataPipelineStack extends cdk.Stack {
       producerFunction.addEnvironment("AXIOM_DATASET", AXIOM_DATASET);
     }
 
-    const queue = new sqs.Queue(this, "ClientQueue", {
+    const queue = new sqs.Queue(this, "ConsumerQueue", {
       visibilityTimeout: cdk.Duration.seconds(30),
     });
 
     topic.addSubscription(new snsSubscriptions.SqsSubscription(queue));
 
-    const clientFunction = new NodejsFunction(this, "ClientFunction", {
+    const consumerFunction = new NodejsFunction(this, "ConsumerFunction", {
       runtime: lambda.Runtime.NODEJS_18_X,
-      entry: path.join(__dirname, "../lambda/client.ts"),
+      entry: path.join(__dirname, "../lambda/consumer.ts"),
       handler: "handler",
       timeout: cdk.Duration.seconds(10),
       architecture: lambda.Architecture.ARM_64,
-      functionName: "message-client",
+      functionName: "message-consumer",
     });
 
-    queue.grantConsumeMessages(clientFunction);
+    queue.grantConsumeMessages(consumerFunction);
 
-    clientFunction.addEventSource(new lambdaEventSources.SqsEventSource(queue));
+    consumerFunction.addEventSource(
+      new lambdaEventSources.SqsEventSource(queue),
+    );
 
-    clientFunction.addLayers(axiomLayer);
+    consumerFunction.addLayers(axiomLayer);
 
-    const axiomApiKeyClient = ssm.StringParameter.fromStringParameterName(
+    const axiomApiKeyConsumer = ssm.StringParameter.fromStringParameterName(
       this,
-      "AxiomApiKeyClient",
+      "AxiomApiKeyConsumer",
       axiomApiKeyParamName,
     );
 
-    axiomApiKeyClient.grantRead(clientFunction);
+    axiomApiKeyConsumer.grantRead(consumerFunction);
 
-    clientFunction.addEnvironment("AXIOM_TOKEN", axiomApiKeyClient.stringValue);
-    clientFunction.addEnvironment("AXIOM_DATASET", AXIOM_DATASET);
+    consumerFunction.addEnvironment(
+      "AXIOM_TOKEN",
+      axiomApiKeyConsumer.stringValue,
+    );
+    consumerFunction.addEnvironment("AXIOM_DATASET", AXIOM_DATASET);
   }
 }
