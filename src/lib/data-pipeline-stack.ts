@@ -11,7 +11,7 @@ import * as lambdaEventSources from "aws-cdk-lib/aws-lambda-event-sources";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as path from "path";
 
-const PRODUCER_COUNT = 1;
+const PRODUCER_COUNT = 5;
 const AXIOM_DATASET = "messages-pipeline-events";
 
 export class DataPipelineStack extends cdk.Stack {
